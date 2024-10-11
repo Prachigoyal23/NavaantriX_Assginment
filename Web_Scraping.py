@@ -1,54 +1,84 @@
+# Importing the necessary libraries
+import pandas as pd
 import requests
 from bs4 import BeautifulSoup
-import pandas as pd
 
-def scrape_amazon(query):
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
-    }
-    url = f"https://www.amazon.com/s?k={query}"
-    response = requests.get(url, headers=headers)
-    soup = BeautifulSoup(response.text, 'html.parser')
+#  Initialize empty lists to store the scraped data
+Brand_Name = []
+Price = []
+Rating = []
+Rating_count = []
+review_count = []
+Ranking = []
+URL = []
 
-    products = []
-    for item in soup.select('.s-main-slot .s-result-item'):
-        title = item.h2.text if item.h2 else 'N/A'
-        price = item.select_one('.a-price .a-offscreen').text if item.select_one('.a-price .a-offscreen') else 'N/A'
-        rating = item.select_one('.a-icon-alt').text if item.select_one('.a-icon-alt') else 'N/A'
-        products.append({'Name': title, 'Price': price, 'Rating': rating})
+# Loop through pages 2 to 11 of the Flipkart search results
+for i in range(2, 12):
+ url = "https://www.flipkart.com/search?q=Mobile+under+50000&otracker=search&otracker1=search&marketplace=FLIPKART&as-show=on&as=off&page="+str(i)
+r = requests.get(url)
+#print(r)
 
-    return products
+ # Parse the HTML content of the page with BeautifulSoup
+soup = BeautifulSoup(r.text, "lxml")
+box = soup.find("div", class_="DOjaWF gdgoEp")
 
-def scrape_flipkart(query):
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
-    }
-    url = f"https://www.flipkart.com/search?q={query}"
-    response = requests.get(url, headers=headers)
-    soup = BeautifulSoup(response.text, 'html.parser')
+# Find the main container for the product listings
+names = box.find_all("div", class_="KzDlHZ")
 
-    products = []
-    for item in soup.select('._1AtVbE'):
-        title = item.select_one('._4rR01T').text if item.select_one('._4rR01T') else 'N/A'
-        price = item.select_one('._30jeq3').text if item.select_one('._30jeq3') else 'N/A'
-        rating = item.select_one('._3LWZlK').text if item.select_one('._3LWZlK') else 'N/A'
-        products.append({'Name': title, 'Price': price, 'Rating': rating})
+ # Extract product names
+for item in names:
+ name = item.text
+Brand_Name.append(name) # Append the product name to the list
+print(Brand_Name)
 
-    return products
+# IF want to extract the only fiest name of Brand (Uncomment the code while using)
+#def extract_first_name(Brand_Name):
+ #   words = Brand_Name.split()
+  #  return words[0]
+#for item in Brand_Name:
+ #   name= item.text
+  #  Brand_Name.append(name)
+   # print(Brand_Name)
 
-def save_to_excel(products, filename='products.xlsx'):
-    df = pd.DataFrame(products)
-    df.to_excel(filename, index=False)
 
-def main():
-    query = input("Enter the product to search: ")
-    amazon_products = scrape_amazon(query)
-    flipkart_products = scrape_flipkart(query)
+# Extract product prices
+Prices = box.find_all("div", class_="Nx9bqj _4b5DiR")
 
-    all_products = amazon_products + flipkart_products
-    save_to_excel(all_products)
+for item in Prices:
+ name = item.text
+Price.append(name)
+print(Price)
 
-    print(f"Scraped {len(all_products)} products and saved to 'products.xlsx'.")
+# Extract Product Rating
+Ratings = box.find_all("div", class_="XQDdHH")
 
-if __name__ == "__main__":
-    main()
+for item in Ratings:
+ name = item.text
+Rating.append(name)
+print(Rating)
+
+# Extract Rating Count and Review Count
+RatingAndReview = box.find_all("span", class_="Wphh3N")
+for item in RatingAndReview:
+ name = item.text
+ Rating_count.append(name)
+ print(Rating_count)
+
+# Extract URLs of the products
+Url = box.find_all("a", class_ ="CGtC98")
+for item in Url:
+            name = item.get("href")
+            URL.append("https://www.flipkart.com" + name)
+
+
+# Create a DataFrame with the extracted data
+df = pd.DataFrame({
+    "Brand Name": Brand_Name,
+    "Price": Price,
+    "Rating": Rating,
+    "Rating Count": Rating_count,
+    "URL": URL
+})
+
+# Save the DataFrame to an Excel file
+df.to_excel("D:/Mobile_Data/mobile_under_50000.xlsx", index=False)  # Save the DataFrame to an Excel file
